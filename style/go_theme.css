@@ -1,0 +1,13 @@
+/* Верхняя панель */
+.stAppHeader {
+    background: #007d9c; /* Темный фон */
+}
+
+/* Заголовки */
+h1, h2, h3, h4, h5, h6 {
+    color: #f0f1f2;
+}
+
+.stButton {
+    color: #5ee3f7;
+}

@@ -1,5 +1,11 @@
 import streamlit as st
 import subprocess
+import psutil
+
+from cli_process import CLIProcess
+
+
+CLI_PROCESS_NAME = "polygfgo_cli"
 
 
 # Форматирование полинома
@@ -7,17 +13,29 @@ def format_polynomial(poly: str) -> str:
     return poly.strip().replace(" ", ",")
 
 
-# Завершение процесса при завершении сессии
-def cleanup():
-    cli_process.terminate()    # Корректно завершить процесс
-    cli_process.wait()         # Дождаться завершения процесса
+def terminate_previous_processes():
+    for proc in find_processes_by_name(CLI_PROCESS_NAME):
+        proc.terminate()
+        proc.wait()
+
+
+def find_processes_by_name(name):
+    processes = []
+    for proc in psutil.process_iter(['pid', 'name']):
+        try:
+            # Проверяем, содержит ли имя процесса искомую строку
+            if name.lower() in proc.name().lower():
+                processes.append(proc)
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            pass  # Игнорируем процессы, к которым нет доступа
+    return processes
 
 
 # Загружаем CSS из файла
 with open("style/go_theme.css") as css_file:
     st.markdown(f"<style>{css_file.read()}</style>", unsafe_allow_html=True)
 
-# Отображение логотипа Go
+# Отображение логотипов Go и Streamlit
 logo_path = "style/Go_Streamlit_Merge.png"  # Локальный путь к картинке
 st.image(logo_path, width=1200)
 
@@ -36,8 +54,9 @@ irreducible_poly = st.text_input(
 
 # Инициализация процесса в Session State
 if "cli_process" not in st.session_state:
-    st.session_state.cli_process = subprocess.Popen(
-        ["./bin/polygfgo_cli"],
+    terminate_previous_processes()
+    st.session_state.cli_process = CLIProcess(
+        [f"./bin/{CLI_PROCESS_NAME}"],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -122,7 +141,7 @@ if st.button("Выполнить операцию"):
             st.error(f"Произошла ошибка: Поле не создано.")
         else:
             # Вывод результата операции
-            st.success(f"Результат операции: {result}")
+            st.text(f"Результат операции: {result}")
 
     except Exception as e:
         st.error(f"Произошла ошибка: {e}")

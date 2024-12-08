@@ -34,6 +34,8 @@ def format_polynomial_to_alg(poly: str) -> str:
     for i, c in enumerate(coefficients):
         if i == len(coefficients) - 1:
             break
+        if c == "0":
+            continue
         result += f"{c}*x^{len(coefficients) - i - 1} + "
     result += coefficients[-1]
 
@@ -244,7 +246,7 @@ def mode_generation():
 
     limit = 128 if output_type == "Отображение на странице" else 1024
     count = st.number_input(
-        "Введите количество многочленов (макс. для отображения на странице 256 шт.):",
+        "Введите количество многочленов (макс. для отображения на странице 128 шт.):",
         min_value=0,
         max_value=limit,
         value=10
@@ -288,6 +290,10 @@ def mode_generation():
                     file.write(result + '\n')
                     result = cli_process.stdout.readline().strip()
                 file.close()
+                # Получаем информацию о файле
+                file_size = os.path.getsize("user_output.txt")  # Размер в байтах
+                # Отображаем информацию о файле
+                st.write(f"Размер файла: `{file_size} байт`")
                 data = open("user_output.txt", "r")
                 st.download_button(
                     label="Скачать файл",
@@ -367,29 +373,6 @@ st.sidebar.header(".log файл текущей сессии")
 # Путь к файлу
 log_path = "errors.log"
 
-try:
-    # Проверяем существование файла
-    if os.path.exists(log_path):
-        # Получаем информацию о файле
-        file_size = os.path.getsize(log_path)  # Размер в байтах
-        file_mtime = os.path.getmtime(log_path)  # Время последнего изменения
-
-        # Отображаем информацию о файле
-        st.sidebar.write(f"Размер файла: `{file_size} байт`")
-
-        # Открываем файл для чтения и добавляем кнопку для скачивания
-        with open(log_path, "r") as f:
-            st.sidebar.download_button(
-                label="Скачать errors.log",
-                data=f,
-                file_name="errors.log",
-                mime="text/plain"
-            )
-    else:
-        st.sidebar.info("Файл errors.log не найден. Начните работу")
-except Exception as e:
-    st.sidebar.error(f"Ошибка при обработке файла: {e}")
-
 # Инициализация процесса в Session State
 if "cli_process" not in st.session_state:
     if os.path.exists(log_path):
@@ -405,6 +388,29 @@ if "cli_process" not in st.session_state:
         bufsize=1
     )
     _ = st.session_state.cli_process.stdout.readline().strip()
+
+try:
+    # Проверяем существование файла
+    if os.path.exists(log_path):
+        # Получаем информацию о файле
+        file_size = os.path.getsize(log_path)  # Размер в байтах
+
+        # Отображаем информацию о файле
+        st.sidebar.write(f"Размер файла: `{file_size} байт`")
+
+        # Открываем файл для чтения и добавляем кнопку для скачивания
+        with open(log_path, "r") as f:
+            st.sidebar.download_button(
+                label="Скачать",
+                data=f,
+                file_name="errors.log",
+                mime="text/plain"
+            )
+    else:
+        st.sidebar.info("Файл errors.log не найден. Начните работу")
+except Exception as e:
+    st.sidebar.error(f"Ошибка при обработке файла: {e}")
+
 if mode == "Информация о проекте":
     mode_show_info()
 elif mode == "Стандартные операции":
